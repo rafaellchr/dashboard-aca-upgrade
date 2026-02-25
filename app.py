@@ -96,7 +96,7 @@ if df_raw is not None:
     st.sidebar.info(f"DATA TAMPIL: {len(df):,} Transaksi")
     
     # --- UI BODY ---
-    st.title("EXECUTIVE DASHBOARD")
+    st.title("DASHBOARD ACA BOGOR")
     if len(date_range) == 2:
         st.caption(f"Monitoring Data: {start_date.strftime('%d %b %Y')} s/d {end_date.strftime('%d %b %Y')} | Segmen: {sel_segment} | Produk: {sel_product}")
     
@@ -522,3 +522,4 @@ if df_raw is not None:
         st.warning("Data Kosong. Cek filter rentang waktu atau format tanggal.")
 else:
     st.info("Silakan masukkan file CSV/Parquet ke folder 'data_produksi'.")
+
