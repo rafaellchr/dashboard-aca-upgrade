@@ -54,8 +54,9 @@ def make_chart(fig):
 check_password() # Memanggil fungsi login dari auth.py
 
 # --- 3. UI DASHBOARD UTAMA ---
-col_logo, col_logout = st.sidebar.columns([3, 1])
-if col_logout.button("Keluar"):
+# PERBAIKAN 1: Rasio kolom disesuaikan & ditambah use_container_width agar tombol tidak terpotong
+col_logo, col_logout = st.sidebar.columns([5, 3]) 
+if col_logout.button("Keluar", use_container_width=True):
     st.session_state['logged_in'] = False
     st.rerun()
 
@@ -117,27 +118,84 @@ if df_raw is not None:
         k3.metric("KECEPATAN (SLA)", f"{df['SLA_HARI'].mean():.1f} HARI", "Target < 2")
         k4.metric("TOTAL POLIS", f"{len(df):,}", "Transaksi Aktif")
 
-        with st.expander("Download Laporan (PDF / HTML)"):
-            st.write("Klik tombol di bawah ini untuk mengunduh laporan ringkas.")
-            top_prod_report = df.groupby('TOC_DESCRIPTION')['PREMIUM'].sum().nlargest(3).reset_index()
-            prod_list_html = "".join([f"<li>{row['TOC_DESCRIPTION']} (Rp {row['PREMIUM']/1e6:,.0f} Juta)</li>" for _, row in top_prod_report.iterrows()])
+        # PERBAIKAN 2: Laporan HTML dibuat jauh lebih detail, rapi, dan insightful
+        with st.expander("Download Laporan Eksekutif (PDF / HTML)"):
+            st.write("Klik tombol di bawah ini untuk mengunduh laporan eksekutif lengkap.")
+            
+            # Persiapan Data Tambahan untuk Report
+            top_prod_report = df.groupby('TOC_DESCRIPTION')['PREMIUM'].sum().nlargest(5).reset_index()
+            prod_list_html = "".join([f"<tr><td style='padding:8px; border-bottom:1px solid #ddd;'>{row['TOC_DESCRIPTION']}</td><td style='padding:8px; border-bottom:1px solid #ddd; text-align:right;'>Rp {row['PREMIUM']/1e6:,.0f} Juta</td></tr>" for _, row in top_prod_report.iterrows()])
+            
+            top_broker_report = df.groupby('MO_NAME')['PREMIUM'].sum().nlargest(5).reset_index()
+            broker_list_html = "".join([f"<tr><td style='padding:8px; border-bottom:1px solid #ddd;'>{row['MO_NAME']}</td><td style='padding:8px; border-bottom:1px solid #ddd; text-align:right;'>Rp {row['PREMIUM']/1e6:,.0f} Juta</td></tr>" for _, row in top_broker_report.iterrows()])
+            
+            avg_sla = df['SLA_HARI'].mean()
             
             report_html = f"""
-            <html><head><title>Laporan Dashboard ACA Bogor</title></head>
-            <body style='font-family:Arial, sans-serif; padding:40px; color:#333;'>
-                <h1 style='color:#2563eb; border-bottom: 2px solid #2563eb;'>LAPORAN DASHBOARD ACA BOGOR</h1>
-                <p><b>Tanggal Download:</b> {datetime.now().strftime('%d %B %Y %H:%M')}</p>
-                <p><b>Periode Data:</b> {start_date} s/d {end_date}</p>
+            <html><head><title>Laporan Eksekutif ACA Bogor</title>
+            <style>
+                body {{ font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #334155; line-height: 1.6; }}
+                h1 {{ color: #1e3a8a; border-bottom: 3px solid #3b82f6; padding-bottom: 10px; font-size: 24px; }}
+                h2 {{ color: #2563eb; margin-top: 30px; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; font-size: 18px; }}
+                table {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }}
+                th {{ background-color: #f1f5f9; text-align: left; padding: 10px; font-weight: bold; color: #475569; }}
+                .highlight {{ background-color: #eff6ff; padding: 15px; border-left: 5px solid #3b82f6; border-radius: 5px; margin-bottom: 20px; }}
+                .metric-container {{ display: flex; justify-content: space-between; margin-top: 15px; }}
+                .metric-box {{ width: 31%; background: #f8fafc; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0; }}
+                .metric-title {{ font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: bold; }}
+                .metric-value {{ font-size: 22px; font-weight: bold; color: #0f172a; margin-top: 5px; }}
+            </style>
+            </head>
+            <body>
+                <h1>LAPORAN EKSEKUTIF KINERJA ACA BOGOR</h1>
+                <p><b>Dicetak pada:</b> {datetime.now().strftime('%d %B %Y, %H:%M WIB')}</p>
+                <p><b>Periode Data:</b> {start_date.strftime('%d %b %Y')} s/d {end_date.strftime('%d %b %Y')}</p>
+                <p><b>Segmen Terpilih:</b> {sel_segment} | <b>Produk Terpilih:</b> {sel_product}</p>
+                
+                <div class="highlight">
+                    <p style="margin:0;">Laporan ini merupakan ringkasan manajerial dari performa bisnis, mencakup analisis pendapatan, efisiensi operasional, dan kontributor utama untuk mempermudah pengambilan keputusan.</p>
+                </div>
+
+                <h2>1. RINGKASAN PERFORMA BISNIS</h2>
+                <div class="metric-container">
+                    <div class="metric-box">
+                        <div class="metric-title">Total Omset Premium</div>
+                        <div class="metric-value">Rp {curr_omset:,.0f}</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-title">Pertumbuhan (YoY)</div>
+                        <div class="metric-value">{growth_yoy:.2f}%</div>
+                    </div>
+                    <div class="metric-box">
+                        <div class="metric-title">Total Transaksi</div>
+                        <div class="metric-value">{len(df):,} Polis</div>
+                    </div>
+                </div>
+
+                <h2>2. EFISIENSI OPERASIONAL & TARGET</h2>
                 <ul>
-                    <li><b>Total Omset Premium:</b> Rp {curr_omset:,.0f}</li>
-                    <li><b>Total Transaksi:</b> {len(df):,} Polis</li>
-                    <li><b>Pertumbuhan (YoY):</b> {growth_yoy:.2f}%</li>
+                    <li><b>Rata-rata Kecepatan Proses (SLA):</b> {avg_sla:.1f} Hari kerja per transaksi.</li>
+                    <li><b>Status SLA:</b> {'Aman (Memenuhi Target)' if avg_sla < 2 else 'Perlu Perhatian (Melebihi Target 2 Hari)'}</li>
+                    <li><b>Status Pencapaian Target Premi:</b> {achievment:.1f}% (Berdasarkan asumsi kenaikan target {target_pct}%)</li>
                 </ul>
-                <h3>Top 3 Produk Penyumbang Omset</h3>
-                <ul>{prod_list_html}</ul>
+
+                <h2>3. TOP 5 PRODUK PENYUMBANG OMSET TERBESAR</h2>
+                <table>
+                    <tr><th>Nama Produk</th><th style="text-align:right;">Total Omset</th></tr>
+                    {prod_list_html}
+                </table>
+
+                <h2>4. TOP 5 AGEN / BROKER KONTRIBUTOR TERBESAR</h2>
+                <table>
+                    <tr><th>Nama Agen / Broker</th><th style="text-align:right;">Total Omset</th></tr>
+                    {broker_list_html}
+                </table>
+                
+                <br><br>
+                <p style="text-align:center; font-size:12px; color:#94a3b8; margin-top:40px;">-- <i>Auto-generated by ACA Bogor Executive Dashboard Intelligence</i> --</p>
             </body></html>
             """
-            st.download_button(label="Download Laporan", data=report_html, file_name=f"Report_{datetime.now().strftime('%Y%m%d')}.html", mime="text/html")
+            st.download_button(label="Unduh Laporan Eksekutif", data=report_html, file_name=f"Report_Eksekutif_ACABogor_{datetime.now().strftime('%Y%m%d')}.html", mime="text/html")
 
         st.markdown("---")
         t1, t2, t3, t4, t5, t6, t7 = st.tabs(["TREN BISNIS", "PRODUK", "NASABAH (CRM)", "AI INTELLIGENCE", "OPERASIONAL", "DATA", "MITRA (AGEN & BROKER)"])
@@ -349,7 +407,6 @@ if df_raw is not None:
 
             st.markdown("---")
             
-            # --- MULAI PERBAIKAN GRAFIK ANOMALI (LOG SCALE) ---
             st.error("**2. AI AUDITOR (Deteksi Anomali Rate)**")
             st.caption("Mendeteksi polis dengan Rate (%) yang terlalu tinggi atau rendah dibandingkan rata-rata produknya.")
             
@@ -357,13 +414,11 @@ if df_raw is not None:
             df_risk = pd.merge(df, stats, on='TOC_DESCRIPTION', how='left')
             df_risk['Z_SCORE'] = (df_risk['RATE_PCT'] - df_risk['mean']) / df_risk['std']
             
-            # PERBAIKAN 1: Z-Score dibuat lebih ketat (> 3) agar tidak terlalu banyak mendeteksi anomali
             df_risk['IS_ANOMALY'] = np.where((df_risk['Z_SCORE'].abs() > 3) & (df_risk['PREMIUM'] > 1000000), 'Anomali', 'Normal')
             
             c_anom1, c_anom2 = st.columns([2, 1])
             
             with c_anom1:
-                # Pastikan Premium di atas nol (karena logaritma dari 0 atau negatif itu error)
                 df_plot_anom = df_risk[df_risk['PREMIUM'] > 0]
                 
                 fig_anom = px.scatter(
@@ -381,10 +436,9 @@ if df_raw is not None:
                         "PREMIUM": ":,.0f"
                     },
                     labels={'PREMIUM': 'Nilai Premi (Rp) - Skala Log', 'RATE_PCT': 'Rate (%)'},
-                    log_x=True # PERBAIKAN 2: Menggunakan Skala Logaritmik agar data tidak tergencet
+                    log_x=True 
                 )
                 
-                # Mengganti format angka sumbu X agar mudah dibaca di mode Log
                 fig_anom.update_layout(xaxis=dict(tickformat='.0s'))
                 fig_anom.update_traces(marker=dict(size=6, line=dict(width=0))) 
                 st.plotly_chart(make_chart(fig_anom), use_container_width=True)
@@ -522,4 +576,3 @@ if df_raw is not None:
         st.warning("Data Kosong. Cek filter rentang waktu atau format tanggal.")
 else:
     st.info("Silakan masukkan file CSV/Parquet ke folder 'data_produksi'.")
-
