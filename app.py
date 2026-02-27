@@ -119,7 +119,7 @@ if df_raw is not None:
         k4.metric("TOTAL POLIS", f"{len(df):,}", "Transaksi Aktif")
 
         # PERBAIKAN 2: Laporan HTML dibuat jauh lebih detail, rapi, dan insightful
-        with st.expander("Download Laporan Eksekutif (PDF / HTML)"):
+        with st.expander("Download Laporan Eksekutif"):
             st.write("Klik tombol di bawah ini untuk mengunduh laporan eksekutif lengkap.")
             
             # Persiapan Data Tambahan untuk Report
@@ -576,3 +576,4 @@ if df_raw is not None:
         st.warning("Data Kosong. Cek filter rentang waktu atau format tanggal.")
 else:
     st.info("Silakan masukkan file CSV/Parquet ke folder 'data_produksi'.")
+
