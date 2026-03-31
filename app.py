@@ -270,7 +270,22 @@ if df_raw is not None:
                 df_pos = df[df['PREMIUM']>0]
                 if not df_pos.empty:
                     fig_tree = px.treemap(df_pos, path=[px.Constant("TOTAL"), 'SEGMENT', 'TOC_DESCRIPTION'], values='PREMIUM', color='SEGMENT', color_discrete_sequence=px.colors.qualitative.Prism)
-                    st.plotly_chart(make_chart(fig_tree), use_container_width=True)
+                    
+                    # Terapkan make_chart
+                    fig_tree = make_chart(fig_tree) 
+                    
+                    # --- SOLUSI UX BOOMER-FRIENDLY (TINGGI & TEKS) ---
+                    fig_tree.update_layout(
+                        height=600, 
+                        uniformtext=dict(minsize=12, mode='hide') 
+                    )
+                    fig_tree.update_traces(
+                        textfont_size=14, 
+                        hovertemplate='<b>%{label}</b><br>Premi: Rp %{value:,.0f}' 
+                    )
+                    # -------------------------------------------------
+                    
+                    st.plotly_chart(fig_tree, use_container_width=True)
             
             with c_p2:
                 st.write("**TOP 10 PRODUK (BERDASARKAN PREMI)**")
