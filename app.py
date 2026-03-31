@@ -205,7 +205,7 @@ if df_raw is not None:
             "OPERASIONAL", 
             "MITRA (AGEN & BROKER)", 
             "DATA", 
-            "✨ AI INTELLIGENCE"
+            "AI INTELLIGENCE"
         ])
         
         with t1:
