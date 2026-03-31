@@ -40,21 +40,23 @@ C_DANG = "#ef4444"
 C_SUCC = "#22c55e" 
 C_WARN = "#f59e0b"
 
+# PERBAIKAN: Margin l=0 dan r=0 dihapus agar plotly bisa auto-adjust untuk teks panjang.
+# Judul sumbu X dan Y juga dinonaktifkan agar tidak ada teks vertikal yang menabrak grafik.
 def make_chart(fig):
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        margin=dict(l=0, r=0, t=30, b=0), font=dict(family="Arial", size=11, color="#334155"),
-        xaxis=dict(showgrid=False, linecolor="#cbd5e1"),
-        yaxis=dict(showgrid=True, gridcolor="#f1f5f9", zeroline=False),
+        margin=dict(t=30, b=20, l=10, r=10),
+        font=dict(family="Arial", size=11, color="#334155"),
+        xaxis=dict(showgrid=False, linecolor="#cbd5e1", title=""),
+        yaxis=dict(showgrid=False, zeroline=False, title=""),
         legend=dict(orientation="h", y=-0.2, x=0.5, xanchor="center")
     )
     return fig
 
 # --- 2. SISTEM LOGIN ---
-check_password() # Memanggil fungsi login dari auth.py
+check_password() 
 
 # --- 3. UI DASHBOARD UTAMA ---
-# PERBAIKAN 1: Rasio kolom disesuaikan & ditambah use_container_width agar tombol tidak terpotong
 col_logo, col_logout = st.sidebar.columns([5, 3]) 
 if col_logout.button("Keluar", use_container_width=True):
     st.session_state['logged_in'] = False
@@ -64,7 +66,6 @@ st.sidebar.header("CONTROL PANEL")
 date_option = st.sidebar.radio("Format Tanggal:", ["AUTO (Deteksi)", "INDO (Hari/Bulan)", "US (Bulan/Hari)"], index=0)
 uploaded_files = st.sidebar.file_uploader("Upload CSV/Parquet Tambahan", type=['csv', 'parquet'], accept_multiple_files=True)
 
-# Memanggil mesin data dari data_engine.py
 df_raw, error_msg = load_data_hybrid(uploaded_files, date_option)
 
 if df_raw is not None:
@@ -98,10 +99,7 @@ if df_raw is not None:
     
     # --- UI BODY ---
     st.title("DASHBOARD ACA BOGOR")
-    
-    # --- PENAMBAHAN DESKRIPSI UNTUK JUDUL UTAMA ---
     st.caption("Dashboard ringkasan eksekutif untuk memantau performa bisnis, pencapaian target, dan efisiensi operasional secara keseluruhan.")
-    # ----------------------------------------------
     
     if len(date_range) == 2:
         st.caption(f"Monitoring Data: {start_date.strftime('%d %b %Y')} s/d {end_date.strftime('%d %b %Y')} | Segmen: {sel_segment} | Produk: {sel_product}")
@@ -123,10 +121,8 @@ if df_raw is not None:
         k3.metric("KECEPATAN (SLA)", f"{df['SLA_HARI'].mean():.1f} HARI", "Target < 2")
         k4.metric("TOTAL POLIS", f"{len(df):,}", "Transaksi Aktif")
 
-        # PERBAIKAN 2: Laporan HTML dibuat jauh lebih detail, rapi, dan insightful
         st.write("Klik tombol di bawah ini untuk mengunduh laporan eksekutif lengkap.")
         
-        # Persiapan Data Tambahan untuk Report
         top_prod_report = df.groupby('TOC_DESCRIPTION')['PREMIUM'].sum().nlargest(5).reset_index()
         prod_list_html = "".join([f"<tr><td style='padding:8px; border-bottom:1px solid #ddd;'>{row['TOC_DESCRIPTION']}</td><td style='padding:8px; border-bottom:1px solid #ddd; text-align:right;'>Rp {row['PREMIUM']/1e6:,.0f} Juta</td></tr>" for _, row in top_prod_report.iterrows()])
         
@@ -219,10 +215,7 @@ if df_raw is not None:
             
             st.markdown("---")
             st.subheader("AI FORECASTER")
-            
-            # --- PENAMBAHAN DESKRIPSI UNTUK AI FORECASTER ---
-            st.caption("Memprediksi estimasi pendapatan premi hingga 6 bulan ke depan menggunakan model Machine Learning berdasarkan pola dan tren data historis.")
-            # ------------------------------------------------
+            st.caption("Memprediksi estimasi pendapatan premi hingga 6 bulan ke depan menggunakan model Machine Learning.")
             
             df_ts = trend.copy()
             df_ts['PERIODE'] = df_ts['TAHUN'].astype(str) + "-" + df_ts['BULAN_NUM'].astype(str).str.zfill(2)
@@ -269,21 +262,26 @@ if df_raw is not None:
                 st.write("**PETA DOMINASI PRODUK**")
                 df_pos = df[df['PREMIUM']>0]
                 if not df_pos.empty:
-                    fig_tree = px.treemap(df_pos, path=[px.Constant("TOTAL"), 'SEGMENT', 'TOC_DESCRIPTION'], values='PREMIUM', color='SEGMENT', color_discrete_sequence=px.colors.qualitative.Prism)
+                    fig_tree = px.treemap(
+                        df_pos, 
+                        path=[px.Constant("TOTAL"), 'SEGMENT', 'TOC_DESCRIPTION'], 
+                        values='PREMIUM', 
+                        color='SEGMENT', 
+                        color_discrete_sequence=px.colors.qualitative.Prism
+                    )
                     
-                    # Terapkan make_chart
                     fig_tree = make_chart(fig_tree) 
                     
-                    # --- SOLUSI UX BOOMER-FRIENDLY (TINGGI & TEKS) ---
+                    # PERBAIKAN TREEMAP: Margin dihilangkan khusus untuk treemap agar kotak lebih besar
                     fig_tree.update_layout(
-                        height=600, 
-                        uniformtext=dict(minsize=12, mode='hide') 
+                        margin=dict(t=30, l=0, r=0, b=0),
+                        height=550
                     )
                     fig_tree.update_traces(
-                        textfont_size=14, 
+                        textfont_size=13, 
+                        textinfo="label",
                         hovertemplate='<b>%{label}</b><br>Premi: Rp %{value:,.0f}' 
                     )
-                    # -------------------------------------------------
                     
                     st.plotly_chart(fig_tree, use_container_width=True)
             
@@ -324,10 +322,22 @@ if df_raw is not None:
                         color_discrete_sequence=[C_PRIM]
                     )
                     
-                    fig_bar.update_traces(texttemplate='%{text:,.0f}', textposition='outside')
-                    fig_bar.update_layout(yaxis={'categoryorder': 'total ascending'})
+                    fig_bar = make_chart(fig_bar)
                     
-                    st.plotly_chart(make_chart(fig_bar), use_container_width=True)
+                    # PERBAIKAN BAR CHART: Teks dimasukkan ke dalam, Sumbu X disembunyikan
+                    fig_bar.update_traces(
+                        texttemplate='Rp %{text:,.0f}', 
+                        textposition='inside', 
+                        insidetextanchor='middle',
+                        textfont=dict(color='white')
+                    )
+                    fig_bar.update_layout(
+                        yaxis={'categoryorder': 'total ascending'},
+                        xaxis={'visible': False}, 
+                        height=550 
+                    )
+                    
+                    st.plotly_chart(fig_bar, use_container_width=True)
                 
         with t3:
             st.subheader("ANALISIS NASABAH & AI CHURN PREDICTION")
@@ -335,7 +345,6 @@ if df_raw is not None:
             rfm = df.groupby('INSURED_NAME').agg({'TGL_IN': lambda x: (snap_date - x.max()).days, 'POLICYNO': 'count', 'PREMIUM': 'sum'}).rename(columns={'TGL_IN': 'RECENCY', 'POLICYNO': 'FREQ', 'PREMIUM': 'MONETARY'})
             rfm['STATUS'] = rfm.apply(lambda r: "CHAMPIONS (VIP)" if r['RECENCY'] < 180 and r['MONETARY'] > 100000000 else ("ACTIVE" if r['RECENCY'] < 180 else ("RISIKO CHURN" if r['RECENCY'] < 365 else "SLEEPING (DORMAN)")), axis=1)
             
-            # --- START ML CHURN PREDICTION ---
             rfm['IS_CHURN_HIST'] = (rfm['RECENCY'] > 180).astype(int)
             if len(rfm['IS_CHURN_HIST'].unique()) > 1:
                 X = rfm[['FREQ', 'MONETARY']]
@@ -345,7 +354,6 @@ if df_raw is not None:
                 rfm['PROB_CHURN_%'] = rf_model.predict_proba(X)[:, 1] * 100
             else:
                 rfm['PROB_CHURN_%'] = 0.0
-            # --- END ML CHURN PREDICTION ---
 
             c_rfm1, c_rfm2 = st.columns([1,2])
             with c_rfm1:
@@ -423,6 +431,7 @@ if df_raw is not None:
                 if not top_pairs.empty:
                     top_pairs['Pair Name'] = top_pairs['Product A'] + " + " + top_pairs['Product B']
                     fig_pairs = px.bar(top_pairs, x='Count', y='Pair Name', orientation='h')
+                    fig_pairs.update_layout(yaxis={'title': ''}, xaxis={'title': ''})
                     st.plotly_chart(make_chart(fig_pairs), use_container_width=True)
                 else: 
                     st.warning("Belum cukup data cross-selling.")
@@ -463,7 +472,7 @@ if df_raw is not None:
                     log_x=True 
                 )
                 
-                fig_anom.update_layout(xaxis=dict(tickformat='.0s'))
+                fig_anom.update_layout(xaxis=dict(tickformat='.0s', title=""), yaxis=dict(title=""))
                 fig_anom.update_traces(marker=dict(size=6, line=dict(width=0))) 
                 st.plotly_chart(make_chart(fig_anom), use_container_width=True)
                 
@@ -524,7 +533,7 @@ if df_raw is not None:
                     color_continuous_scale='RdYlGn_r', 
                     labels={'POLICYNO': 'Jumlah Transaksi', 'SLA_HARI': 'Rata-rata SLA (Hari)'}
                 )
-                fig_bar_admin.update_layout(yaxis={'categoryorder':'total ascending'})
+                fig_bar_admin.update_layout(yaxis={'categoryorder':'total ascending', 'title': ''}, xaxis={'title': ''})
                 st.plotly_chart(make_chart(fig_bar_admin), use_container_width=True)
                 
                 with st.expander("Klik di sini untuk melihat Rincian SEMUA INPUT"):
@@ -533,7 +542,7 @@ if df_raw is not None:
                         use_container_width=True,
                         hide_index=True,
                         column_config={
-                            "INPUT_NAME": "Nama Inputf",
+                            "INPUT_NAME": "Nama Input",
                             "POLICYNO": st.column_config.NumberColumn("Total Transaksi", format="%d Polis"),
                             "SLA_HARI": st.column_config.NumberColumn("Rata-rata Kecepatan", format="%.1f Hari"),
                             "PREMIUM": st.column_config.NumberColumn("Total Omset Dipegang (Rp)", format="Rp %d")
@@ -563,12 +572,20 @@ if df_raw is not None:
                         x='PREMIUM', 
                         y='MO_NAME', 
                         orientation='h',
-                        text_auto='.2s',
                         color='PREMIUM',
                         color_continuous_scale='Blues'
                     )
-                    fig_broker.update_traces(hovertemplate='<b>%{y}</b><br>Omset: Rp %{x:,.0f}')
-                    fig_broker.update_layout(yaxis={'categoryorder':'total ascending'})
+                    fig_broker.update_traces(
+                        texttemplate='Rp %{x:,.0f}',
+                        textposition='inside',
+                        insidetextanchor='middle',
+                        textfont=dict(color='white'),
+                        hovertemplate='<b>%{y}</b><br>Omset: Rp %{x:,.0f}'
+                    )
+                    fig_broker.update_layout(
+                        yaxis={'categoryorder':'total ascending', 'title': ''}, 
+                        xaxis={'visible': False}
+                    )
                     
                     event = st.plotly_chart(make_chart(fig_broker), use_container_width=True, on_select="rerun", selection_mode="points")
                     
