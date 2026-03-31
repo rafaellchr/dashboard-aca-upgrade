@@ -98,6 +98,11 @@ if df_raw is not None:
     
     # --- UI BODY ---
     st.title("DASHBOARD ACA BOGOR")
+    
+    # --- PENAMBAHAN DESKRIPSI UNTUK JUDUL UTAMA ---
+    st.caption("Dashboard ringkasan eksekutif untuk memantau performa bisnis, pencapaian target, dan efisiensi operasional secara keseluruhan.")
+    # ----------------------------------------------
+    
     if len(date_range) == 2:
         st.caption(f"Monitoring Data: {start_date.strftime('%d %b %Y')} s/d {end_date.strftime('%d %b %Y')} | Segmen: {sel_segment} | Produk: {sel_product}")
     
@@ -214,6 +219,11 @@ if df_raw is not None:
             
             st.markdown("---")
             st.subheader("AI FORECASTER")
+            
+            # --- PENAMBAHAN DESKRIPSI UNTUK AI FORECASTER ---
+            st.caption("Memprediksi estimasi pendapatan premi hingga 6 bulan ke depan menggunakan model Machine Learning berdasarkan pola dan tren data historis.")
+            # ------------------------------------------------
+            
             df_ts = trend.copy()
             df_ts['PERIODE'] = df_ts['TAHUN'].astype(str) + "-" + df_ts['BULAN_NUM'].astype(str).str.zfill(2)
             
