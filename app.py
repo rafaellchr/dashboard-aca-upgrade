@@ -483,7 +483,7 @@ if df_raw is not None:
                 
             with c_anom2:
                 anomalies_df = df_risk[df_risk['IS_ANOMALY'] == 'Anomali'].sort_values('Z_SCORE', key=abs, ascending=False)
-                st.write(f"**🔴 {len(anomalies_df)} Polis Terdeteksi Anomali Ekstrem**")
+                st.write(f"**🔴 {len(anomalies_df)} Polis Terdeteksi Anomali**")
                 
                 if not anomalies_df.empty:
                     st.dataframe(
@@ -496,7 +496,7 @@ if df_raw is not None:
                     st.success("Aman! Tidak ada indikasi anomali ekstrem pada rate premi saat ini.")
                     
             if not anomalies_df.empty:
-                with st.expander("Buka Rincian Lengkap Data Anomali Ekstrem"):
+                with st.expander("Buka Rincian Lengkap Data Anomali"):
                     st.dataframe(
                         anomalies_df[['POLICYNO', 'INSURED_NAME', 'TOC_DESCRIPTION', 'PREMIUM', 'RATE_PCT', 'mean', 'Z_SCORE']],
                         use_container_width=True,
