@@ -534,7 +534,7 @@ if df_raw is not None:
             
         with t7:
             # PERUBAHAN: Menambahkan kotak penjelasan (ekspektasi) di awal menu
-            st.markdown("PUSAT KECERDASAN BUATAN (AI INTELLIGENCE)")
+            st.markdown("### PUSAT KECERDASAN BUATAN (AI INTELLIGENCE)")
             st.info("""
             **Selamat datang di AI Intelligence Center!** 
             
