@@ -630,7 +630,7 @@ if df_raw is not None:
                     st.success("Aman! Tidak ada indikasi anomali pada rate premi saat ini.")
                     
             if not anomalies_df.empty:
-                with st.expander("Buka Rincian Lengkap Data Anomali Ekstrem"):
+                with st.expander("Buka Rincian Lengkap Data Anomali"):
                     st.dataframe(
                         anomalies_df[['POLICYNO', 'INSURED_NAME', 'TOC_DESCRIPTION', 'PREMIUM', 'RATE_PCT', 'mean', 'Z_SCORE']],
                         use_container_width=True,
