@@ -40,8 +40,6 @@ C_DANG = "#ef4444"
 C_SUCC = "#22c55e" 
 C_WARN = "#f59e0b"
 
-# PERBAIKAN: Margin l=0 dan r=0 dihapus agar plotly bisa auto-adjust untuk teks panjang.
-# Judul sumbu X dan Y juga dinonaktifkan agar tidak ada teks vertikal yang menabrak grafik.
 def make_chart(fig):
     fig.update_layout(
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
@@ -272,7 +270,6 @@ if df_raw is not None:
                     
                     fig_tree = make_chart(fig_tree) 
                     
-                    # PERBAIKAN TREEMAP: Margin dihilangkan khusus untuk treemap agar kotak lebih besar
                     fig_tree.update_layout(
                         margin=dict(t=30, l=0, r=0, b=0),
                         height=550
@@ -324,7 +321,6 @@ if df_raw is not None:
                     
                     fig_bar = make_chart(fig_bar)
                     
-                    # PERBAIKAN BAR CHART: Teks dimasukkan ke dalam, Sumbu X disembunyikan
                     fig_bar.update_traces(
                         texttemplate='Rp %{text:,.0f}', 
                         textposition='inside', 
@@ -361,12 +357,21 @@ if df_raw is not None:
                 st.plotly_chart(make_chart(fig_pie), use_container_width=True)
             with c_rfm2:
                 st.write("**AI PREDICTION: NASABAH AKTIF YANG BERISIKO TINGGI CHURN**")
-                at_risk = rfm[rfm['STATUS'] == 'ACTIVE'].sort_values('PROB_CHURN_%', ascending=False).head(10)
+                
+                # PERBAIKAN: Reset index dan konfigurasikan kolom agar tidak freeze
+                at_risk = rfm[rfm['STATUS'] == 'ACTIVE'].sort_values('PROB_CHURN_%', ascending=False).head(10).reset_index()
+                
                 if not at_risk.empty:
                     st.dataframe(
-                        at_risk[['PROB_CHURN_%', 'FREQ', 'MONETARY']], 
+                        at_risk[['INSURED_NAME', 'PROB_CHURN_%', 'FREQ', 'MONETARY']], 
                         use_container_width=True,
-                        column_config={"PROB_CHURN_%": st.column_config.ProgressColumn("Probabilitas Churn", min_value=0, max_value=100, format="%.1f%%")}
+                        hide_index=True, # Menyembunyikan index bawaan agar tidak ter-freeze
+                        column_config={
+                            "INSURED_NAME": st.column_config.TextColumn("Nama Nasabah", width="medium"), # Membatasi lebar teks nasabah
+                            "PROB_CHURN_%": st.column_config.ProgressColumn("Probabilitas Churn", min_value=0, max_value=100, format="%.1f%%"),
+                            "FREQ": st.column_config.NumberColumn("Jml Transaksi"),
+                            "MONETARY": st.column_config.NumberColumn("Total Premi (Rp)", format="Rp %d")
+                        }
                     )
                 else:
                     st.success("Belum ada indikasi nasabah aktif yang berisiko churn tinggi saat ini.")
@@ -550,7 +555,7 @@ if df_raw is not None:
                     )
 
         with t6:
-            st.dataframe(df, use_container_width=True)
+            st.dataframe(df, use_container_width=True, hide_index=True) # Perbaikan sekalian di bagian DATA
             st.download_button("DOWNLOAD DATA CSV", data=df.to_csv(index=False).encode('utf-8'), file_name="export.csv", mime="text/csv")
             
         with t7:
