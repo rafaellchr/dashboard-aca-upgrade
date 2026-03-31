@@ -534,9 +534,9 @@ if df_raw is not None:
             
         with t7:
             # PERUBAHAN: Menambahkan kotak penjelasan (ekspektasi) di awal menu
-            st.markdown("### ✨ PUSAT KECERDASAN BUATAN (AI INTELLIGENCE)")
+            st.markdown("PUSAT KECERDASAN BUATAN (AI INTELLIGENCE)")
             st.info("""
-            **Selamat datang di AI Intelligence Center!** 🤖
+            **Selamat datang di AI Intelligence Center!** 
             
             Menu ini dirancang secara khusus untuk melakukan pemindaian otomatis pada ribuan data historis transaksi Anda. 
             Dari data tersebut, algoritma akan membantu Anda memetakan:
@@ -617,7 +617,7 @@ if df_raw is not None:
                 
             with c_anom2:
                 anomalies_df = df_risk[df_risk['IS_ANOMALY'] == 'Anomali'].sort_values('Z_SCORE', key=abs, ascending=False)
-                st.write(f"**🔴 {len(anomalies_df)} Polis Terdeteksi Anomali Ekstrem**")
+                st.write(f"**🔴 {len(anomalies_df)} Polis Terdeteksi Anomali**")
                 
                 if not anomalies_df.empty:
                     st.dataframe(
@@ -627,7 +627,7 @@ if df_raw is not None:
                         column_config={"RATE_PCT": st.column_config.NumberColumn("Rate (%)", format="%.2f")}
                     )
                 else:
-                    st.success("Aman! Tidak ada indikasi anomali ekstrem pada rate premi saat ini.")
+                    st.success("Aman! Tidak ada indikasi anomali pada rate premi saat ini.")
                     
             if not anomalies_df.empty:
                 with st.expander("Buka Rincian Lengkap Data Anomali Ekstrem"):
