@@ -119,83 +119,82 @@ if df_raw is not None:
         k4.metric("TOTAL POLIS", f"{len(df):,}", "Transaksi Aktif")
 
         # PERBAIKAN 2: Laporan HTML dibuat jauh lebih detail, rapi, dan insightful
-        with st.expander("Download Laporan Eksekutif"):
-            st.write("Klik tombol di bawah ini untuk mengunduh laporan eksekutif lengkap.")
+        st.write("Klik tombol di bawah ini untuk mengunduh laporan eksekutif lengkap.")
+        
+        # Persiapan Data Tambahan untuk Report
+        top_prod_report = df.groupby('TOC_DESCRIPTION')['PREMIUM'].sum().nlargest(5).reset_index()
+        prod_list_html = "".join([f"<tr><td style='padding:8px; border-bottom:1px solid #ddd;'>{row['TOC_DESCRIPTION']}</td><td style='padding:8px; border-bottom:1px solid #ddd; text-align:right;'>Rp {row['PREMIUM']/1e6:,.0f} Juta</td></tr>" for _, row in top_prod_report.iterrows()])
+        
+        top_broker_report = df.groupby('MO_NAME')['PREMIUM'].sum().nlargest(5).reset_index()
+        broker_list_html = "".join([f"<tr><td style='padding:8px; border-bottom:1px solid #ddd;'>{row['MO_NAME']}</td><td style='padding:8px; border-bottom:1px solid #ddd; text-align:right;'>Rp {row['PREMIUM']/1e6:,.0f} Juta</td></tr>" for _, row in top_broker_report.iterrows()])
+        
+        avg_sla = df['SLA_HARI'].mean()
+        
+        report_html = f"""
+        <html><head><title>Laporan Eksekutif ACA Bogor</title>
+        <style>
+            body {{ font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #334155; line-height: 1.6; }}
+            h1 {{ color: #1e3a8a; border-bottom: 3px solid #3b82f6; padding-bottom: 10px; font-size: 24px; }}
+            h2 {{ color: #2563eb; margin-top: 30px; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; font-size: 18px; }}
+            table {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }}
+            th {{ background-color: #f1f5f9; text-align: left; padding: 10px; font-weight: bold; color: #475569; }}
+            .highlight {{ background-color: #eff6ff; padding: 15px; border-left: 5px solid #3b82f6; border-radius: 5px; margin-bottom: 20px; }}
+            .metric-container {{ display: flex; justify-content: space-between; margin-top: 15px; }}
+            .metric-box {{ width: 31%; background: #f8fafc; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0; }}
+            .metric-title {{ font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: bold; }}
+            .metric-value {{ font-size: 22px; font-weight: bold; color: #0f172a; margin-top: 5px; }}
+        </style>
+        </head>
+        <body>
+            <h1>LAPORAN EKSEKUTIF KINERJA ACA BOGOR</h1>
+            <p><b>Dicetak pada:</b> {datetime.now().strftime('%d %B %Y, %H:%M WIB')}</p>
+            <p><b>Periode Data:</b> {start_date.strftime('%d %b %Y')} s/d {end_date.strftime('%d %b %Y')}</p>
+            <p><b>Segmen Terpilih:</b> {sel_segment} | <b>Produk Terpilih:</b> {sel_product}</p>
             
-            # Persiapan Data Tambahan untuk Report
-            top_prod_report = df.groupby('TOC_DESCRIPTION')['PREMIUM'].sum().nlargest(5).reset_index()
-            prod_list_html = "".join([f"<tr><td style='padding:8px; border-bottom:1px solid #ddd;'>{row['TOC_DESCRIPTION']}</td><td style='padding:8px; border-bottom:1px solid #ddd; text-align:right;'>Rp {row['PREMIUM']/1e6:,.0f} Juta</td></tr>" for _, row in top_prod_report.iterrows()])
-            
-            top_broker_report = df.groupby('MO_NAME')['PREMIUM'].sum().nlargest(5).reset_index()
-            broker_list_html = "".join([f"<tr><td style='padding:8px; border-bottom:1px solid #ddd;'>{row['MO_NAME']}</td><td style='padding:8px; border-bottom:1px solid #ddd; text-align:right;'>Rp {row['PREMIUM']/1e6:,.0f} Juta</td></tr>" for _, row in top_broker_report.iterrows()])
-            
-            avg_sla = df['SLA_HARI'].mean()
-            
-            report_html = f"""
-            <html><head><title>Laporan Eksekutif ACA Bogor</title>
-            <style>
-                body {{ font-family: 'Segoe UI', Arial, sans-serif; padding: 40px; color: #334155; line-height: 1.6; }}
-                h1 {{ color: #1e3a8a; border-bottom: 3px solid #3b82f6; padding-bottom: 10px; font-size: 24px; }}
-                h2 {{ color: #2563eb; margin-top: 30px; border-bottom: 1px solid #cbd5e1; padding-bottom: 5px; font-size: 18px; }}
-                table {{ width: 100%; border-collapse: collapse; margin-top: 10px; font-size: 14px; }}
-                th {{ background-color: #f1f5f9; text-align: left; padding: 10px; font-weight: bold; color: #475569; }}
-                .highlight {{ background-color: #eff6ff; padding: 15px; border-left: 5px solid #3b82f6; border-radius: 5px; margin-bottom: 20px; }}
-                .metric-container {{ display: flex; justify-content: space-between; margin-top: 15px; }}
-                .metric-box {{ width: 31%; background: #f8fafc; padding: 15px; border-radius: 8px; text-align: center; border: 1px solid #e2e8f0; }}
-                .metric-title {{ font-size: 12px; color: #64748b; text-transform: uppercase; font-weight: bold; }}
-                .metric-value {{ font-size: 22px; font-weight: bold; color: #0f172a; margin-top: 5px; }}
-            </style>
-            </head>
-            <body>
-                <h1>LAPORAN EKSEKUTIF KINERJA ACA BOGOR</h1>
-                <p><b>Dicetak pada:</b> {datetime.now().strftime('%d %B %Y, %H:%M WIB')}</p>
-                <p><b>Periode Data:</b> {start_date.strftime('%d %b %Y')} s/d {end_date.strftime('%d %b %Y')}</p>
-                <p><b>Segmen Terpilih:</b> {sel_segment} | <b>Produk Terpilih:</b> {sel_product}</p>
-                
-                <div class="highlight">
-                    <p style="margin:0;">Laporan ini merupakan ringkasan manajerial dari performa bisnis, mencakup analisis pendapatan, efisiensi operasional, dan kontributor utama untuk mempermudah pengambilan keputusan.</p>
+            <div class="highlight">
+                <p style="margin:0;">Laporan ini merupakan ringkasan manajerial dari performa bisnis, mencakup analisis pendapatan, efisiensi operasional, dan kontributor utama untuk mempermudah pengambilan keputusan.</p>
+            </div>
+
+            <h2>1. RINGKASAN PERFORMA BISNIS</h2>
+            <div class="metric-container">
+                <div class="metric-box">
+                    <div class="metric-title">Total Omset Premium</div>
+                    <div class="metric-value">Rp {curr_omset:,.0f}</div>
                 </div>
-
-                <h2>1. RINGKASAN PERFORMA BISNIS</h2>
-                <div class="metric-container">
-                    <div class="metric-box">
-                        <div class="metric-title">Total Omset Premium</div>
-                        <div class="metric-value">Rp {curr_omset:,.0f}</div>
-                    </div>
-                    <div class="metric-box">
-                        <div class="metric-title">Pertumbuhan (YoY)</div>
-                        <div class="metric-value">{growth_yoy:.2f}%</div>
-                    </div>
-                    <div class="metric-box">
-                        <div class="metric-title">Total Transaksi</div>
-                        <div class="metric-value">{len(df):,} Polis</div>
-                    </div>
+                <div class="metric-box">
+                    <div class="metric-title">Pertumbuhan (YoY)</div>
+                    <div class="metric-value">{growth_yoy:.2f}%</div>
                 </div>
+                <div class="metric-box">
+                    <div class="metric-title">Total Transaksi</div>
+                    <div class="metric-value">{len(df):,} Polis</div>
+                </div>
+            </div>
 
-                <h2>2. EFISIENSI OPERASIONAL & TARGET</h2>
-                <ul>
-                    <li><b>Rata-rata Kecepatan Proses (SLA):</b> {avg_sla:.1f} Hari kerja per transaksi.</li>
-                    <li><b>Status SLA:</b> {'Aman (Memenuhi Target)' if avg_sla < 2 else 'Perlu Perhatian (Melebihi Target 2 Hari)'}</li>
-                    <li><b>Status Pencapaian Target Premi:</b> {achievment:.1f}% (Berdasarkan asumsi kenaikan target {target_pct}%)</li>
-                </ul>
+            <h2>2. EFISIENSI OPERASIONAL & TARGET</h2>
+            <ul>
+                <li><b>Rata-rata Kecepatan Proses (SLA):</b> {avg_sla:.1f} Hari kerja per transaksi.</li>
+                <li><b>Status SLA:</b> {'Aman (Memenuhi Target)' if avg_sla < 2 else 'Perlu Perhatian (Melebihi Target 2 Hari)'}</li>
+                <li><b>Status Pencapaian Target Premi:</b> {achievment:.1f}% (Berdasarkan asumsi kenaikan target {target_pct}%)</li>
+            </ul>
 
-                <h2>3. TOP 5 PRODUK PENYUMBANG OMSET TERBESAR</h2>
-                <table>
-                    <tr><th>Nama Produk</th><th style="text-align:right;">Total Omset</th></tr>
-                    {prod_list_html}
-                </table>
+            <h2>3. TOP 5 PRODUK PENYUMBANG OMSET TERBESAR</h2>
+            <table>
+                <tr><th>Nama Produk</th><th style="text-align:right;">Total Omset</th></tr>
+                {prod_list_html}
+            </table>
 
-                <h2>4. TOP 5 AGEN / BROKER KONTRIBUTOR TERBESAR</h2>
-                <table>
-                    <tr><th>Nama Agen / Broker</th><th style="text-align:right;">Total Omset</th></tr>
-                    {broker_list_html}
-                </table>
-                
-                <br><br>
-                <p style="text-align:center; font-size:12px; color:#94a3b8; margin-top:40px;">-- <i>Auto-generated by ACA Bogor Executive Dashboard Intelligence</i> --</p>
-            </body></html>
-            """
-            st.download_button(label="Unduh Laporan Eksekutif", data=report_html, file_name=f"Report_Eksekutif_ACABogor_{datetime.now().strftime('%Y%m%d')}.html", mime="text/html")
+            <h2>4. TOP 5 AGEN / BROKER KONTRIBUTOR TERBESAR</h2>
+            <table>
+                <tr><th>Nama Agen / Broker</th><th style="text-align:right;">Total Omset</th></tr>
+                {broker_list_html}
+            </table>
+            
+            <br><br>
+            <p style="text-align:center; font-size:12px; color:#94a3b8; margin-top:40px;">-- <i>Auto-generated by ACA Bogor Executive Dashboard Intelligence</i> --</p>
+        </body></html>
+        """
+        st.download_button(label="Unduh Laporan Eksekutif", data=report_html, file_name=f"Report_Eksekutif_ACABogor_{datetime.now().strftime('%Y%m%d')}.html", mime="text/html")
 
         st.markdown("---")
         t1, t2, t3, t4, t5, t6, t7 = st.tabs(["TREN BISNIS", "PRODUK", "NASABAH (CRM)", "AI INTELLIGENCE", "OPERASIONAL", "DATA", "MITRA (AGEN & BROKER)"])
@@ -576,4 +575,3 @@ if df_raw is not None:
         st.warning("Data Kosong. Cek filter rentang waktu atau format tanggal.")
 else:
     st.info("Silakan masukkan file CSV/Parquet ke folder 'data_produksi'.")
-
