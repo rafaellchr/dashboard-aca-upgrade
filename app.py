@@ -196,7 +196,17 @@ if df_raw is not None:
         st.download_button(label="Unduh Laporan Eksekutif", data=report_html, file_name=f"Report_Eksekutif_ACABogor_{datetime.now().strftime('%Y%m%d')}.html", mime="text/html")
 
         st.markdown("---")
-        t1, t2, t3, t4, t5, t6, t7 = st.tabs(["TREN BISNIS", "PRODUK", "NASABAH (CRM)", "AI INTELLIGENCE", "OPERASIONAL", "DATA", "MITRA (AGEN & BROKER)"])
+        
+        # PERUBAHAN: Urutan tab diubah, AI dipindah ke paling akhir dengan icon khusus
+        t1, t2, t3, t4, t5, t6, t7 = st.tabs([
+            "TREN BISNIS", 
+            "PRODUK", 
+            "NASABAH (CRM)", 
+            "OPERASIONAL", 
+            "MITRA (AGEN & BROKER)", 
+            "DATA", 
+            "✨ AI INTELLIGENCE"
+        ])
         
         with t1:
             c1, c2 = st.columns([2,1])
@@ -358,16 +368,15 @@ if df_raw is not None:
             with c_rfm2:
                 st.write("**AI PREDICTION: NASABAH AKTIF YANG BERISIKO TINGGI CHURN**")
                 
-                # PERBAIKAN: Reset index dan konfigurasikan kolom agar tidak freeze
                 at_risk = rfm[rfm['STATUS'] == 'ACTIVE'].sort_values('PROB_CHURN_%', ascending=False).head(10).reset_index()
                 
                 if not at_risk.empty:
                     st.dataframe(
                         at_risk[['INSURED_NAME', 'PROB_CHURN_%', 'FREQ', 'MONETARY']], 
                         use_container_width=True,
-                        hide_index=True, # Menyembunyikan index bawaan agar tidak ter-freeze
+                        hide_index=True, 
                         column_config={
-                            "INSURED_NAME": st.column_config.TextColumn("Nama Nasabah", width="medium"), # Membatasi lebar teks nasabah
+                            "INSURED_NAME": st.column_config.TextColumn("Nama Nasabah", width="medium"), 
                             "PROB_CHURN_%": st.column_config.ProgressColumn("Probabilitas Churn", min_value=0, max_value=100, format="%.1f%%"),
                             "FREQ": st.column_config.NumberColumn("Jml Transaksi"),
                             "MONETARY": st.column_config.NumberColumn("Total Premi (Rp)", format="Rp %d")
@@ -418,101 +427,6 @@ if df_raw is not None:
                     st.plotly_chart(make_chart(fig_2d), use_container_width=True)
 
         with t4:
-            st.markdown("### AI INTELLIGENCE CENTER")
-            
-            st.info("**1. AI OPPORTUNITY FINDER (Peluang Cross-Selling)**")
-            basket = df.groupby(['INSURED_NAME', 'TOC_DESCRIPTION'])['POLICYNO'].count().unstack().fillna(0).map(lambda x: 1 if x > 0 else 0)
-            if len(basket.columns) > 1:
-                co_matrix = basket.T.dot(basket)
-                np.fill_diagonal(co_matrix.values, 0)
-                
-                stacked = co_matrix.stack()
-                stacked.index.names = ['Product A', 'Product B'] 
-                pairs = stacked.reset_index(name='Count')
-                pairs = pairs[pairs['Count'] > 0]
-                pairs['sorted_key'] = pairs.apply(lambda x: tuple(sorted([x['Product A'], x['Product B']])), axis=1)
-                top_pairs = pairs.drop_duplicates(subset='sorted_key').sort_values('Count', ascending=False).head(10)
-                
-                if not top_pairs.empty:
-                    top_pairs['Pair Name'] = top_pairs['Product A'] + " + " + top_pairs['Product B']
-                    fig_pairs = px.bar(top_pairs, x='Count', y='Pair Name', orientation='h')
-                    fig_pairs.update_layout(yaxis={'title': ''}, xaxis={'title': ''})
-                    st.plotly_chart(make_chart(fig_pairs), use_container_width=True)
-                else: 
-                    st.warning("Belum cukup data cross-selling.")
-            else: 
-                st.warning("Variasi produk belum cukup.")
-
-            st.markdown("---")
-            
-            st.error("**2. AI AUDITOR (Deteksi Anomali Rate)**")
-            st.caption("Mendeteksi polis dengan Rate (%) yang terlalu tinggi atau rendah dibandingkan rata-rata produknya.")
-            
-            stats = df[df['RATE_PCT'] > 0].groupby('TOC_DESCRIPTION')['RATE_PCT'].agg(['mean', 'std']).reset_index()
-            df_risk = pd.merge(df, stats, on='TOC_DESCRIPTION', how='left')
-            df_risk['Z_SCORE'] = (df_risk['RATE_PCT'] - df_risk['mean']) / df_risk['std']
-            
-            df_risk['IS_ANOMALY'] = np.where((df_risk['Z_SCORE'].abs() > 3) & (df_risk['PREMIUM'] > 1000000), 'Anomali', 'Normal')
-            
-            c_anom1, c_anom2 = st.columns([2, 1])
-            
-            with c_anom1:
-                df_plot_anom = df_risk[df_risk['PREMIUM'] > 0]
-                
-                fig_anom = px.scatter(
-                    df_plot_anom, 
-                    x="PREMIUM", 
-                    y="RATE_PCT", 
-                    color="IS_ANOMALY", 
-                    color_discrete_map={'Anomali': C_DANG, 'Normal': 'rgba(203, 213, 225, 0.3)'}, 
-                    hover_name="INSURED_NAME",
-                    hover_data={
-                        "POLICYNO": True, 
-                        "TOC_DESCRIPTION": True, 
-                        "RATE_PCT": ":.2f", 
-                        "IS_ANOMALY": False,
-                        "PREMIUM": ":,.0f"
-                    },
-                    labels={'PREMIUM': 'Nilai Premi (Rp) - Skala Log', 'RATE_PCT': 'Rate (%)'},
-                    log_x=True 
-                )
-                
-                fig_anom.update_layout(xaxis=dict(tickformat='.0s', title=""), yaxis=dict(title=""))
-                fig_anom.update_traces(marker=dict(size=6, line=dict(width=0))) 
-                st.plotly_chart(make_chart(fig_anom), use_container_width=True)
-                
-            with c_anom2:
-                anomalies_df = df_risk[df_risk['IS_ANOMALY'] == 'Anomali'].sort_values('Z_SCORE', key=abs, ascending=False)
-                st.write(f"**🔴 {len(anomalies_df)} Polis Terdeteksi Anomali**")
-                
-                if not anomalies_df.empty:
-                    st.dataframe(
-                        anomalies_df[['POLICYNO', 'RATE_PCT']],
-                        use_container_width=True,
-                        hide_index=True,
-                        column_config={"RATE_PCT": st.column_config.NumberColumn("Rate (%)", format="%.2f")}
-                    )
-                else:
-                    st.success("Aman! Tidak ada indikasi anomali ekstrem pada rate premi saat ini.")
-                    
-            if not anomalies_df.empty:
-                with st.expander("Buka Rincian Lengkap Data Anomali"):
-                    st.dataframe(
-                        anomalies_df[['POLICYNO', 'INSURED_NAME', 'TOC_DESCRIPTION', 'PREMIUM', 'RATE_PCT', 'mean', 'Z_SCORE']],
-                        use_container_width=True,
-                        hide_index=True,
-                        column_config={
-                            "POLICYNO": "No. Polis",
-                            "INSURED_NAME": "Nama Nasabah",
-                            "TOC_DESCRIPTION": "Produk",
-                            "PREMIUM": st.column_config.NumberColumn("Premi (Rp)", format="Rp %d"),
-                            "RATE_PCT": st.column_config.NumberColumn("Rate Aktual", format="%.2f%%"),
-                            "mean": st.column_config.NumberColumn("Rata-rata Normal", format="%.2f%%"),
-                            "Z_SCORE": st.column_config.NumberColumn("Skor Deviasi", format="%.1f")
-                        }
-                    )
-
-        with t5:
             c_op1, c_op2 = st.columns([1, 2])
             with c_op1:
                 st.subheader("KEPATUHAN SLA")
@@ -553,12 +467,8 @@ if df_raw is not None:
                             "PREMIUM": st.column_config.NumberColumn("Total Omset Dipegang (Rp)", format="Rp %d")
                         }
                     )
-
-        with t6:
-            st.dataframe(df, use_container_width=True, hide_index=True) # Perbaikan sekalian di bagian DATA
-            st.download_button("DOWNLOAD DATA CSV", data=df.to_csv(index=False).encode('utf-8'), file_name="export.csv", mime="text/csv")
             
-        with t7:
+        with t5:
             st.subheader("KINERJA TOP AGEN & BROKER")
             st.caption("KLIK pada salah satu batang grafik (Agen) di bawah untuk melihat rincian transaksinya.")
             
@@ -615,6 +525,124 @@ if df_raw is not None:
                             "MO_NAME": "Nama Agen / Broker",
                             "PREMIUM": st.column_config.NumberColumn("Total Premi (Rp)", format="Rp %d"),
                             "POLICYNO": "Jml Transaksi"
+                        }
+                    )
+
+        with t6:
+            st.dataframe(df, use_container_width=True, hide_index=True)
+            st.download_button("DOWNLOAD DATA CSV", data=df.to_csv(index=False).encode('utf-8'), file_name="export.csv", mime="text/csv")
+            
+        with t7:
+            # PERUBAHAN: Menambahkan kotak penjelasan (ekspektasi) di awal menu
+            st.markdown("### ✨ PUSAT KECERDASAN BUATAN (AI INTELLIGENCE)")
+            st.info("""
+            **Selamat datang di AI Intelligence Center!** 🤖
+            
+            Menu ini dirancang secara khusus untuk melakukan pemindaian otomatis pada ribuan data historis transaksi Anda. 
+            Dari data tersebut, algoritma akan membantu Anda memetakan:
+            1. **Peluang Bisnis Baru:** Menemukan *Cross-Selling* terbaik (produk apa yang paling sering dibeli secara bersamaan oleh nasabah).
+            2. **Keamanan & Audit Internal:** Mendeteksi anomali (ketidakwajaran) pada *Rate* Premi yang terlalu melenceng dari rata-rata normal untuk memitigasi risiko *human-error* atau diskon berlebih.
+            """)
+            st.markdown("---")
+            
+            st.write("**1. AI OPPORTUNITY FINDER (Peluang Cross-Selling)**")
+            basket = df.groupby(['INSURED_NAME', 'TOC_DESCRIPTION'])['POLICYNO'].count().unstack().fillna(0).map(lambda x: 1 if x > 0 else 0)
+            if len(basket.columns) > 1:
+                co_matrix = basket.T.dot(basket)
+                np.fill_diagonal(co_matrix.values, 0)
+                
+                stacked = co_matrix.stack()
+                stacked.index.names = ['Product A', 'Product B'] 
+                pairs = stacked.reset_index(name='Count')
+                pairs = pairs[pairs['Count'] > 0]
+                pairs['sorted_key'] = pairs.apply(lambda x: tuple(sorted([x['Product A'], x['Product B']])), axis=1)
+                top_pairs = pairs.drop_duplicates(subset='sorted_key').sort_values('Count', ascending=False).head(10)
+                
+                if not top_pairs.empty:
+                    # PERUBAHAN: Memendekkan nama produk agar grafik tidak tergencet
+                    top_pairs['Full Name'] = top_pairs['Product A'] + " + " + top_pairs['Product B']
+                    top_pairs['Pair Name'] = top_pairs['Product A'].str.slice(0, 22) + "... + " + top_pairs['Product B'].str.slice(0, 22) + "..."
+                    
+                    fig_pairs = px.bar(
+                        top_pairs, 
+                        x='Count', 
+                        y='Pair Name', 
+                        orientation='h',
+                        hover_name='Full Name'
+                    )
+                    fig_pairs.update_layout(yaxis={'title': ''}, xaxis={'title': ''})
+                    st.plotly_chart(make_chart(fig_pairs), use_container_width=True)
+                else: 
+                    st.warning("Belum cukup data cross-selling.")
+            else: 
+                st.warning("Variasi produk belum cukup.")
+
+            st.markdown("---")
+            
+            st.write("**2. AI AUDITOR (Deteksi Anomali Rate)**")
+            st.caption("Mendeteksi polis dengan Rate (%) yang terlalu tinggi atau rendah dibandingkan rata-rata produknya.")
+            
+            stats = df[df['RATE_PCT'] > 0].groupby('TOC_DESCRIPTION')['RATE_PCT'].agg(['mean', 'std']).reset_index()
+            df_risk = pd.merge(df, stats, on='TOC_DESCRIPTION', how='left')
+            df_risk['Z_SCORE'] = (df_risk['RATE_PCT'] - df_risk['mean']) / df_risk['std']
+            
+            df_risk['IS_ANOMALY'] = np.where((df_risk['Z_SCORE'].abs() > 3) & (df_risk['PREMIUM'] > 1000000), 'Anomali', 'Normal')
+            
+            c_anom1, c_anom2 = st.columns([2, 1])
+            
+            with c_anom1:
+                df_plot_anom = df_risk[df_risk['PREMIUM'] > 0]
+                
+                fig_anom = px.scatter(
+                    df_plot_anom, 
+                    x="PREMIUM", 
+                    y="RATE_PCT", 
+                    color="IS_ANOMALY", 
+                    color_discrete_map={'Anomali': C_DANG, 'Normal': 'rgba(203, 213, 225, 0.3)'}, 
+                    hover_name="INSURED_NAME",
+                    hover_data={
+                        "POLICYNO": True, 
+                        "TOC_DESCRIPTION": True, 
+                        "RATE_PCT": ":.2f", 
+                        "IS_ANOMALY": False,
+                        "PREMIUM": ":,.0f"
+                    },
+                    labels={'PREMIUM': 'Nilai Premi (Rp) - Skala Log', 'RATE_PCT': 'Rate (%)'},
+                    log_x=True 
+                )
+                
+                fig_anom.update_layout(xaxis=dict(tickformat='.0s', title=""), yaxis=dict(title=""))
+                fig_anom.update_traces(marker=dict(size=6, line=dict(width=0))) 
+                st.plotly_chart(make_chart(fig_anom), use_container_width=True)
+                
+            with c_anom2:
+                anomalies_df = df_risk[df_risk['IS_ANOMALY'] == 'Anomali'].sort_values('Z_SCORE', key=abs, ascending=False)
+                st.write(f"**🔴 {len(anomalies_df)} Polis Terdeteksi Anomali Ekstrem**")
+                
+                if not anomalies_df.empty:
+                    st.dataframe(
+                        anomalies_df[['POLICYNO', 'RATE_PCT']],
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={"RATE_PCT": st.column_config.NumberColumn("Rate (%)", format="%.2f")}
+                    )
+                else:
+                    st.success("Aman! Tidak ada indikasi anomali ekstrem pada rate premi saat ini.")
+                    
+            if not anomalies_df.empty:
+                with st.expander("Buka Rincian Lengkap Data Anomali Ekstrem"):
+                    st.dataframe(
+                        anomalies_df[['POLICYNO', 'INSURED_NAME', 'TOC_DESCRIPTION', 'PREMIUM', 'RATE_PCT', 'mean', 'Z_SCORE']],
+                        use_container_width=True,
+                        hide_index=True,
+                        column_config={
+                            "POLICYNO": "No. Polis",
+                            "INSURED_NAME": "Nama Nasabah",
+                            "TOC_DESCRIPTION": "Produk",
+                            "PREMIUM": st.column_config.NumberColumn("Premi (Rp)", format="Rp %d"),
+                            "RATE_PCT": st.column_config.NumberColumn("Rate Aktual", format="%.2f%%"),
+                            "mean": st.column_config.NumberColumn("Rata-rata Normal", format="%.2f%%"),
+                            "Z_SCORE": st.column_config.NumberColumn("Skor Deviasi", format="%.1f")
                         }
                     )
 
