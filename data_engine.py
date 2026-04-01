@@ -18,7 +18,7 @@ def load_data_hybrid(uploaded_files=None, date_mode="AUTO"):
                 dfs.append(df_t)
                 parquet_found = True
             except Exception as e:
-                st.error(f"Gagal baca parquet: {e}")
+                st.error(f"Gagal membaca data sistem: {e}")
 
     # 2. BACA CSV JIKA TIDAK ADA PARQUET
     if not parquet_found:
@@ -47,17 +47,11 @@ def load_data_hybrid(uploaded_files=None, date_mode="AUTO"):
 
     if 'DATE_INPUT' not in df.columns: return None, "MISSING_COL"
 
-    # --- [IMPROVEMENT KRUSIAL]: PENANGANAN EXCEL SERIAL DATE ---
-    # Fungsi ini akan mengecek apakah tanggal berupa angka (misal: 45688.0) atau string biasa
+    # PENANGANAN EXCEL SERIAL DATE
     def parse_smart_date(series):
-        # Coba ubah ke angka dulu
         num_dates = pd.to_numeric(series, errors='coerce')
         mask_num = num_dates.notna()
-        
-        # Untuk yang bukan angka, baca secara normal
         dates = pd.to_datetime(series, errors='coerce')
-        
-        # Untuk yang berupa angka (Excel Format), konversi dari hitungan hari sejak 1899
         dates.loc[mask_num] = pd.to_datetime(num_dates[mask_num], origin='1899-12-30', unit='D')
         return dates
 
@@ -72,7 +66,7 @@ def load_data_hybrid(uploaded_files=None, date_mode="AUTO"):
     if 'EXPIRY' in df.columns:
         df['TGL_EXP'] = parse_smart_date(df['EXPIRY'])
     
-    # --- PEMBERSIHAN ANGKA ---
+    # PEMBERSIHAN ANGKA
     def clean_num(col):
         if col in df.columns:
             val = df[col].astype(str).str.replace(',', '', regex=False).str.replace('Rp', '', regex=False).str.strip()
@@ -87,7 +81,7 @@ def load_data_hybrid(uploaded_files=None, date_mode="AUTO"):
     df.loc[mask, 'RATE_PCT'] = (df.loc[mask, 'PREMIUM'] / df.loc[mask, 'TSI_VAL']) * 100
     
     df['SLA_HARI'] = (df['TGL_APP'] - df['TGL_IN']).dt.days
-    df['STATUS_SLA'] = df['SLA_HARI'].apply(lambda x: "ON TRACK" if x <= 2 else "DELAYED")
+    df['STATUS_SLA'] = df['SLA_HARI'].apply(lambda x: "AMAN" if x <= 2 else "TERLAMBAT")
     
     df = df.dropna(subset=['TGL_IN'])
     
@@ -95,9 +89,9 @@ def load_data_hybrid(uploaded_files=None, date_mode="AUTO"):
     df['BULAN_NUM'] = df['TGL_IN'].dt.month
     df['BULAN_NAMA'] = df['TGL_IN'].dt.strftime('%B').str.upper()
     
-    # Memasukkan MO_NAME (Nama Agen) agar bisa dipakai di visualisasi
+    # Memasukkan kolom penting agar bisa dipakai di visualisasi
     for c in ['SEGMENT', 'TOC_DESCRIPTION', 'INPUT_NAME', 'INSURED_NAME', 'BRANCH', 'MO_NAME']:
-        if c not in df.columns: df[c] = "UNKNOWN"
-        else: df[c] = df[c].fillna("UNKNOWN").str.upper().str.strip()
+        if c not in df.columns: df[c] = "TIDAK DIKETAHUI"
+        else: df[c] = df[c].fillna("TIDAK DIKETAHUI").str.upper().str.strip()
         
     return df, None
