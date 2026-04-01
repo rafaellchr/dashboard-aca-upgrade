@@ -222,10 +222,22 @@ if df_raw is not None:
         with t1:
             c1, c2 = st.columns([2,1])
             with c1:
-                st.subheader("Pergerakan Pendapatan")
+                st.subheader("TREN PENDAPATAN")
                 trend = df.groupby(['TAHUN', 'BULAN_NUM', 'BULAN_NAMA'])['PREMIUM'].sum().reset_index().sort_values(['TAHUN', 'BULAN_NUM'])
-                fig = px.line(trend, x='BULAN_NAMA', y='PREMIUM', color='TAHUN', markers=True, color_discrete_sequence=[C_SEC, C_PRIM])
-                fig.update_traces(line=dict(width=3), marker=dict(size=8))
+                
+                # Ubah TAHUN jadi string agar dibaca sebagai kategori unik oleh Plotly
+                trend['TAHUN_STR'] = trend['TAHUN'].astype(str) 
+                
+                # Ubah parameter color menjadi 'TAHUN_STR' dan gunakan palet warna bawaan Plotly yang lebih berwarna
+                fig = px.line(
+                    trend, 
+                    x='BULAN_NAMA', 
+                    y='PREMIUM', 
+                    color='TAHUN_STR', 
+                    markers=True, 
+                    color_discrete_sequence=px.colors.qualitative.Plotly,
+                    labels={'TAHUN_STR': 'TAHUN'} # Agar label legend tetap rapi bernama 'TAHUN'
+                )
                 st.plotly_chart(make_chart(fig), use_container_width=True)
             with c2:
                 st.subheader("Rata-rata Pola Bulanan")
