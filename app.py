@@ -547,9 +547,18 @@ if df_raw is not None:
             
             st.write("**1. AI OPPORTUNITY FINDER (Peluang Cross-Selling)**")
             basket = df.groupby(['INSURED_NAME', 'TOC_DESCRIPTION'])['POLICYNO'].count().unstack().fillna(0).map(lambda x: 1 if x > 0 else 0)
+            
             if len(basket.columns) > 1:
-                co_matrix = basket.T.dot(basket).copy() # <--- TAMBAHKAN .copy() DI SINI
-                np.fill_diagonal(co_matrix.values, 0)
+                co_matrix = basket.T.dot(basket)
+                
+                # --- BAGIAN YANG DIUBAH ---
+                # Konversi ke array murni, ubah diagonalnya, lalu kembalikan ke DataFrame
+                arr = co_matrix.to_numpy(copy=True)
+                np.fill_diagonal(arr, 0)
+                co_matrix = pd.DataFrame(arr, index=co_matrix.index, columns=co_matrix.columns)
+                # --------------------------
+                
+                stacked = co_matrix.stack()
                 
                 stacked = co_matrix.stack()
                 stacked.index.names = ['Product A', 'Product B'] 
