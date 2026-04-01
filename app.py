@@ -548,7 +548,7 @@ if df_raw is not None:
             st.write("**1. AI OPPORTUNITY FINDER (Peluang Cross-Selling)**")
             basket = df.groupby(['INSURED_NAME', 'TOC_DESCRIPTION'])['POLICYNO'].count().unstack().fillna(0).map(lambda x: 1 if x > 0 else 0)
             if len(basket.columns) > 1:
-                co_matrix = basket.T.dot(basket)
+                co_matrix = basket.T.dot(basket).copy() # <--- TAMBAHKAN .copy() DI SINI
                 np.fill_diagonal(co_matrix.values, 0)
                 
                 stacked = co_matrix.stack()
