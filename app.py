@@ -282,10 +282,21 @@ if df_raw is not None:
                 
                 df_ts['TIPE'] = 'Data Saat Ini'
                 df_combined = pd.concat([df_ts[['PERIODE', 'PREMIUM', 'TIPE']].tail(12), pd.DataFrame(pred_list)])
-                fig_cast = px.bar(df_combined, x='PERIODE', y='PREMIUM', color='TIPE', color_discrete_map={'Data Saat Ini': C_PRIM, forecast_type: C_WARN})
+                df_ts['TIPE'] = 'Data Saat Ini'
+                df_combined = pd.concat([df_ts[['PERIODE', 'PREMIUM', 'TIPE']].tail(12), pd.DataFrame(pred_list)])
+                
+                fig_cast = px.bar(
+                    df_combined, 
+                    x='PERIODE', 
+                    y='PREMIUM', 
+                    color='TIPE', 
+                    color_discrete_map={
+                        'Data Saat Ini': '#2563EB', 
+                        forecast_type: C_WARN 
+                    }
+                )
+                
                 st.plotly_chart(make_chart(fig_cast), use_container_width=True)
-            else:
-                st.info("Pilih rentang waktu minimal 6 bulan untuk mengaktifkan fitur Prediksi.")
 
         with t2:
             st.subheader("Temuan Sistem Otomatis")
