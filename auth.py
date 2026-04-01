@@ -7,7 +7,7 @@ def check_password():
 
     if not st.session_state['logged_in']:
         # Tampilan login yang lebih bersih dan elegan
-        st.markdown("<h1 style='text-align: center; color: #0F172A;'>PORTAL EKSEKUTIF ACA BOGOR</h1>", unsafe_allow_html=True)
+        st.markdown("<h1 style='text-align: center; color: #0F172A;'>PORTAL EKSEKUTIF DASHBOARD ACA BOGOR</h1>", unsafe_allow_html=True)
         st.markdown("<p style='text-align: center; color: #475569;'>Sistem diamankan. Silakan masukkan kredensial Anda untuk mengakses dashboard.</p>", unsafe_allow_html=True)
         
         st.write("")
