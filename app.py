@@ -718,6 +718,96 @@ if df_raw is not None:
                             "PREMIUM": st.column_config.NumberColumn("Total Premi (Rp)", format="Rp %d"),
                             "POLICYNO": "Jml Transaksi"
                         }
+                    )with t6: # Tab Mitra Agen & Broker (Sesuai Koreksi)
+            st.subheader("KINERJA TOP AGEN & BROKER")
+            st.caption("**CARA PAKAI:** Klik pada batang grafik Agen di kiri, maka daftar transaksi detailnya akan muncul di tabel kanan.")
+            
+            c_br1, c_br2 = st.columns([2, 1])
+            
+            # Persiapan Data
+            df_broker = df.groupby('MO_NAME').agg({'PREMIUM':'sum', 'POLICYNO':'count'}).reset_index()
+            df_broker = df_broker[df_broker['PREMIUM'] > 0].sort_values('PREMIUM', ascending=False)
+            
+            # Inisialisasi variabel pilihan
+            selected_broker = None
+            
+            with c_br1:
+                top_10_broker = df_broker.head(10)
+                if not top_10_broker.empty:
+                    fig_broker = px.bar(
+                        top_10_broker, 
+                        x='PREMIUM', 
+                        y='MO_NAME', 
+                        orientation='h',
+                        color='PREMIUM',
+                        color_continuous_scale='Blues',
+                        labels={'PREMIUM': 'Total Premi', 'MO_NAME': 'Nama Agen'}
+                    )
+                    
+                    fig_broker.update_traces(
+                        texttemplate='Rp %{x:,.0f}',
+                        textposition='inside',
+                        hovertemplate='<b>%{y}</b><br>Total Premi: Rp %{x:,.0f}'
+                    )
+                    
+                    fig_broker.update_layout(
+                        yaxis={'categoryorder':'total ascending', 'title': ''}, 
+                        xaxis={'visible': False},
+                        margin=dict(l=0, r=0, t=0, b=0)
+                    )
+                    
+                    # Menangkap event klik dengan on_select="rerun"
+                    event = st.plotly_chart(
+                        make_chart(fig_broker), 
+                        use_container_width=True, 
+                        on_select="rerun", 
+                        selection_mode="points"
+                    )
+                    
+                    # LOGIKA PENANGKAPAN DATA KLIK
+                    try:
+                        # Cek apakah ada titik yang dipilih
+                        if event and "selection" in event and len(event["selection"]["points"]) > 0:
+                            # Ambil nilai sumbu Y (Nama Agen) dari titik pertama yang diklik
+                            selected_broker = event["selection"]["points"][0]["y"]
+                    except Exception as e:
+                        # Jika error (versi streamlit lama/berbeda), selected_broker tetap None
+                        selected_broker = None
+                else:
+                    st.info("Tidak ada data Agen/Broker.")
+                    
+            with c_br2:
+                if selected_broker:
+                    # TAMPILAN SAAT AGEN DI-KLIK
+                    st.markdown(f"### Detail: {selected_broker}")
+                    detail_df = df[df['MO_NAME'] == selected_broker][['INSURED_NAME', 'TOC_DESCRIPTION', 'PREMIUM']]
+                    
+                    st.dataframe(
+                        detail_df, 
+                        use_container_width=True, 
+                        hide_index=True, 
+                        height=450,
+                        column_config={
+                            "INSURED_NAME": "Nasabah",
+                            "TOC_DESCRIPTION": "Produk",
+                            "PREMIUM": st.column_config.NumberColumn("Premi", format="Rp %d")
+                        }
+                    )
+                    if st.button("✖ Reset Pilihan"):
+                        st.rerun()
+                else:
+                    # TAMPILAN DEFAULT (SEBELUM ADA KLIK)
+                    st.write("**RINGKASAN SELURUH KONTRIBUTOR:**")
+                    st.dataframe(
+                        df_broker, 
+                        use_container_width=True,
+                        hide_index=True,
+                        height=450,
+                        column_config={
+                            "MO_NAME": "Nama Agen / Broker",
+                            "PREMIUM": st.column_config.NumberColumn("Total Premi", format="Rp %d"),
+                            "POLICYNO": "Unit"
+                        }
                     )
         with t7:
             st.subheader("Data Transaksi Mentah")
