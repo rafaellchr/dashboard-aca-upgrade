@@ -415,14 +415,11 @@ if df_raw is not None:
             c_p1, c_p2 = st.columns([1, 1]) 
             
             with c_p1:
-                # PERUBAHAN: Treemap diganti dengan Pie/Donut Chart agar jauh lebih bersih dan mudah dibaca
-               st.write("**PROPORSI BERDASARKAN SEGMEN BISNIS**")
+                st.write("**PROPORSI BERDASARKAN SEGMEN BISNIS**")
                 
-                # 1. Siapkan data dan urutkan dari yang terbesar
                 df_pie = df[df['PREMIUM'] > 0].groupby('SEGMENT')['PREMIUM'].sum().reset_index()
                 df_pie = df_pie.sort_values('PREMIUM', ascending=False)
                 
-                # 2. Ambil 5 segmen teratas saja, sisanya digabung jadi "LAINNYA"
                 top_n = 5
                 if len(df_pie) > top_n:
                     df_top = df_pie.iloc[:top_n]
@@ -434,16 +431,14 @@ if df_raw is not None:
                 else:
                     df_plot = df_pie
 
-                # 3. Buat chart donut-nya
                 fig_pie = px.pie(
                     df_plot, 
                     values='PREMIUM', 
                     names='SEGMENT', 
-                    hole=0.4, # Membuat lubang di tengah (Donut)
+                    hole=0.4, 
                     color_discrete_sequence=px.colors.qualitative.Prism
                 )
                 
-                # 4. Rapikan letak teks agar di dalam chart
                 fig_pie.update_traces(
                     textposition='inside', 
                     textinfo='percent+label',
