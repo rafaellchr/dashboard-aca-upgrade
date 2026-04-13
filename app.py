@@ -718,7 +718,8 @@ if df_raw is not None:
                             "PREMIUM": st.column_config.NumberColumn("Total Premi (Rp)", format="Rp %d"),
                             "POLICYNO": "Jml Transaksi"
                         }
-                    )with t6: # Tab Mitra Agen & Broker (Sesuai Koreksi)
+                    )
+                    with t6: # Tab Mitra Agen & Broker (Sesuai Koreksi)
             st.subheader("KINERJA TOP AGEN & BROKER")
             st.caption("**CARA PAKAI:** Klik pada batang grafik Agen di kiri, maka daftar transaksi detailnya akan muncul di tabel kanan.")
             
