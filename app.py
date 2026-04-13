@@ -416,12 +416,41 @@ if df_raw is not None:
             
             with c_p1:
                 # PERUBAHAN: Treemap diganti dengan Pie/Donut Chart agar jauh lebih bersih dan mudah dibaca
-                st.write("**PROPORSI BERDASARKAN SEGMEN BISNIS**")
-                df_seg = df.groupby('SEGMENT')['PREMIUM'].sum().reset_index()
-                if not df_seg.empty:
-                    fig_pie_seg = px.pie(df_seg, values='PREMIUM', names='SEGMENT', hole=0.4, color_discrete_sequence=px.colors.qualitative.Prism)
-                    fig_pie_seg.update_traces(textinfo='percent+label', textfont_size=14)
-                    st.plotly_chart(make_chart(fig_pie_seg), use_container_width=True)
+               st.write("**PROPORSI BERDASARKAN SEGMEN BISNIS**")
+                
+                # 1. Siapkan data dan urutkan dari yang terbesar
+                df_pie = df[df['PREMIUM'] > 0].groupby('SEGMENT')['PREMIUM'].sum().reset_index()
+                df_pie = df_pie.sort_values('PREMIUM', ascending=False)
+                
+                # 2. Ambil 5 segmen teratas saja, sisanya digabung jadi "LAINNYA"
+                top_n = 5
+                if len(df_pie) > top_n:
+                    df_top = df_pie.iloc[:top_n]
+                    df_others = pd.DataFrame({
+                        'SEGMENT': ['LAINNYA'],
+                        'PREMIUM': [df_pie.iloc[top_n:]['PREMIUM'].sum()]
+                    })
+                    df_plot = pd.concat([df_top, df_others], ignore_index=True)
+                else:
+                    df_plot = df_pie
+
+                # 3. Buat chart donut-nya
+                fig_pie = px.pie(
+                    df_plot, 
+                    values='PREMIUM', 
+                    names='SEGMENT', 
+                    hole=0.4, # Membuat lubang di tengah (Donut)
+                    color_discrete_sequence=px.colors.qualitative.Prism
+                )
+                
+                # 4. Rapikan letak teks agar di dalam chart
+                fig_pie.update_traces(
+                    textposition='inside', 
+                    textinfo='percent+label',
+                    insidetextorientation='horizontal'
+                )
+                
+                st.plotly_chart(make_chart(fig_pie), use_container_width=True)
             
             with c_p2:
                 st.write("**SEPULUH PRODUK PENYUMBANG TERBESAR**")
