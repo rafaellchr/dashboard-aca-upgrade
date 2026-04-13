@@ -547,7 +547,7 @@ if df_raw is not None:
             
             st.markdown("---")
             st.write("**Peta Evaluasi Nasabah**")
-            st.caption("Petunjuk: Semakin posisinya berada di bawah (jarak transaksi dekat) dan di kanan (sering bertransaksi), maka nasabah tersebut semakin setia dan berharga.")
+            st.caption("Petunjuk: Semakin posisinya berada di KIRI ATAS (baru saja bertransaksi dan sangat sering bertransaksi), maka nasabah tersebut semakin setia dan berharga.")
             
             rfm_plot = rfm.reset_index().copy()
             rfm_plot['MONETARY_SIZE'] = rfm_plot['MONETARY'].abs() + 1 
@@ -568,23 +568,44 @@ if df_raw is not None:
                 if rfm_plot.empty:
                     st.info(f"Belum ada data nasabah untuk kategori: {filter_status}.")
                 else:
+                    # Tambahkan angka 1 agar fitur logaritma tidak error pada angka 0
+                    rfm_plot['RECENCY_LOG'] = rfm_plot['RECENCY'] + 1 
+                    
                     fig_2d = px.scatter(
                         rfm_plot, 
-                        x='RECENCY', 
+                        x='RECENCY_LOG', 
                         y='FREQ', 
                         size='MONETARY_SIZE', 
                         color='STATUS', 
                         hover_name='INSURED_NAME',
-                        hover_data={'MONETARY': ':,.0f', 'MONETARY_SIZE': False},
+                        hover_data={
+                            'RECENCY_LOG': False, 
+                            'RECENCY': True,
+                            'MONETARY': ':,.0f', 
+                            'MONETARY_SIZE': False
+                        },
                         opacity=0.7, 
+                        # Sesuaikan nama status di bawah ini jika Anda sudah mengubahnya ke Bahasa Indonesia
                         color_discrete_map={
                             'PELANGGAN VIP': C_SUCC, 
-                            'AKTIF': C_SEC, 
+                            'CHAMPIONS (VIP)': C_SUCC, 
+                            'AKTIF': C_PRIM,
+                            'ACTIVE': C_PRIM,  
                             'BERISIKO PINDAH': C_WARN, 
-                            'TIDAK AKTIF': C_DANG
+                            'RISIKO CHURN': C_WARN,
+                            'TIDAK AKTIF': C_DANG,
+                            'SLEEPING (DORMAN)': C_DANG
                         },
-                        labels={'RECENCY': 'Jarak Sejak Transaksi Terakhir (Hari)', 'FREQ': 'Total Frekuensi Transaksi'}
+                        log_x=True, # Mengaktifkan skala log agar data menyebar
+                        log_y=True  # Mengaktifkan skala log agar data menyebar
                     )
+                    
+                    # Memperjelas nama sumbu agar mudah dibaca
+                    fig_2d.update_layout(
+                        xaxis_title="← MAKIN KE KIRI MAKIN BAGUS (Jarak Hari Terakhir Transaksi)",
+                        yaxis_title="Total Transaksi (MAKIN KE ATAS MAKIN BAGUS) →"
+                    )
+                    
                     st.plotly_chart(make_chart(fig_2d), use_container_width=True)
 
         with t5:
