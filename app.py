@@ -651,9 +651,9 @@ if df_raw is not None:
                         }
                     )
             
-        with t6:
-            st.subheader("Peringkat Mitra Agen dan Broker")
-            st.caption("Silakan klik salah satu batang grafik di bawah untuk melihat rincian riwayat transaksi agen tersebut.")
+        with t6: # Tab Mitra Agen & Broker
+            st.subheader("KINERJA TOP AGEN & BROKER")
+            st.caption("KLIK pada salah satu batang grafik (Agen) di bawah untuk melihat rincian transaksinya.")
             
             c_br1, c_br2 = st.columns([2, 1])
             
@@ -677,7 +677,7 @@ if df_raw is not None:
                         texttemplate='Rp %{x:,.0f}',
                         textposition='inside',
                         insidetextanchor='middle',
-                        textfont=dict(color='white', size=13),
+                        textfont=dict(color='white'),
                         hovertemplate='<b>%{y}</b><br>Omset: Rp %{x:,.0f}'
                     )
                     fig_broker.update_layout(
@@ -687,30 +687,38 @@ if df_raw is not None:
                     
                     event = st.plotly_chart(make_chart(fig_broker), use_container_width=True, on_select="rerun", selection_mode="points")
                     
-                    if len(event.selection.points) > 0:
-                        selected_broker = event.selection.points[0].y
+                    # --- PERBAIKAN BUG DI SINI ---
+                    # Menggunakan Try-Except agar jika Streamlit gagal membaca event klik, aplikasi tidak crash
+                    try:
+                        if hasattr(event, 'selection') and event.selection and len(event.selection.points) > 0:
+                            selected_broker = event.selection.points[0].y
+                        elif isinstance(event, dict) and event.get('selection') and len(event['selection'].get('points', [])) > 0:
+                            selected_broker = event['selection']['points'][0].get('y')
+                    except Exception:
+                        selected_broker = None
+                    # -----------------------------
+                        
                 else:
-                    st.info("Tidak ada data Mitra Agen untuk ditampilkan.")
+                    st.info("Tidak ada data Agen/Broker untuk ditampilkan.")
                     
             with c_br2:
                 if selected_broker:
-                    st.success(f"Filter Diterapkan: {selected_broker}")
-                    st.write("Daftar Transaksi Baru-baru Ini:")
+                    st.success(f"**FILTER AKTIF:** {selected_broker}")
+                    st.write("Daftar Transaksi Agen:")
                     detail_df = df[df['MO_NAME'] == selected_broker][['INSURED_NAME', 'TOC_DESCRIPTION', 'PREMIUM']]
                     st.dataframe(detail_df, use_container_width=True, hide_index=True)
                 else:
-                    st.write("**Tabel Rekapitulasi Kontributor:**")
+                    st.write("**TABEL LENGKAP KONTRIBUTOR:**")
                     st.dataframe(
                         df_broker, 
                         use_container_width=True,
                         hide_index=True,
                         column_config={
                             "MO_NAME": "Nama Agen / Broker",
-                            "PREMIUM": st.column_config.NumberColumn("Total Pendapatan (Rp)", format="Rp %d"),
-                            "POLICYNO": "Jumlah Transaksi"
+                            "PREMIUM": st.column_config.NumberColumn("Total Premi (Rp)", format="Rp %d"),
+                            "POLICYNO": "Jml Transaksi"
                         }
                     )
-
         with t7:
             st.subheader("Data Transaksi Mentah")
             st.caption("Tabel ini berisi seluruh data mentah jika Anda membutuhkan pengecekan manual yang spesifik.")
