@@ -651,77 +651,9 @@ if df_raw is not None:
                         }
                     )
             
-        with t6: # Tab Mitra Agen & Broker
+        with t6: # Tab Mitra Agen & Broker (Sesuai Koreksi)
             st.subheader("KINERJA TOP AGEN & BROKER")
-            st.caption("KLIK pada salah satu batang grafik (Agen) di bawah untuk melihat rincian transaksinya.")
-            
-            c_br1, c_br2 = st.columns([2, 1])
-            
-            df_broker = df.groupby('MO_NAME').agg({'PREMIUM':'sum', 'POLICYNO':'count'}).reset_index()
-            df_broker = df_broker[df_broker['PREMIUM'] > 0].sort_values('PREMIUM', ascending=False)
-            
-            selected_broker = None
-            
-            with c_br1:
-                top_10_broker = df_broker.head(10)
-                if not top_10_broker.empty:
-                    fig_broker = px.bar(
-                        top_10_broker, 
-                        x='PREMIUM', 
-                        y='MO_NAME', 
-                        orientation='h',
-                        color='PREMIUM',
-                        color_continuous_scale='Blues'
-                    )
-                    fig_broker.update_traces(
-                        texttemplate='Rp %{x:,.0f}',
-                        textposition='inside',
-                        insidetextanchor='middle',
-                        textfont=dict(color='white'),
-                        hovertemplate='<b>%{y}</b><br>Omset: Rp %{x:,.0f}'
-                    )
-                    fig_broker.update_layout(
-                        yaxis={'categoryorder':'total ascending', 'title': ''}, 
-                        xaxis={'visible': False}
-                    )
-                    
-                    event = st.plotly_chart(make_chart(fig_broker), use_container_width=True, on_select="rerun", selection_mode="points")
-                    
-                    # --- PERBAIKAN BUG DI SINI ---
-                    # Menggunakan Try-Except agar jika Streamlit gagal membaca event klik, aplikasi tidak crash
-                    try:
-                        if hasattr(event, 'selection') and event.selection and len(event.selection.points) > 0:
-                            selected_broker = event.selection.points[0].y
-                        elif isinstance(event, dict) and event.get('selection') and len(event['selection'].get('points', [])) > 0:
-                            selected_broker = event['selection']['points'][0].get('y')
-                    except Exception:
-                        selected_broker = None
-                    # -----------------------------
-                        
-                else:
-                    st.info("Tidak ada data Agen/Broker untuk ditampilkan.")
-                    
-            with c_br2:
-                if selected_broker:
-                    st.success(f"**FILTER AKTIF:** {selected_broker}")
-                    st.write("Daftar Transaksi Agen:")
-                    detail_df = df[df['MO_NAME'] == selected_broker][['INSURED_NAME', 'TOC_DESCRIPTION', 'PREMIUM']]
-                    st.dataframe(detail_df, use_container_width=True, hide_index=True)
-                else:
-                    st.write("**TABEL LENGKAP KONTRIBUTOR:**")
-                    st.dataframe(
-                        df_broker, 
-                        use_container_width=True,
-                        hide_index=True,
-                        column_config={
-                            "MO_NAME": "Nama Agen / Broker",
-                            "PREMIUM": st.column_config.NumberColumn("Total Premi (Rp)", format="Rp %d"),
-                            "POLICYNO": "Jml Transaksi"
-                        }
-                    )
-                    with t6: # Tab Mitra Agen & Broker (Sesuai Koreksi)
-            st.subheader("KINERJA TOP AGEN & BROKER")
-            st.caption("**CARA PAKAI:** Klik pada batang grafik Agen di kiri, maka daftar transaksi detailnya akan muncul di tabel kanan.")
+            st.caption("CARA PAKAI: Klik pada batang grafik Agen di kiri, maka daftar transaksi detailnya akan muncul di tabel kanan.")
             
             c_br1, c_br2 = st.columns([2, 1])
             
@@ -767,12 +699,9 @@ if df_raw is not None:
                     
                     # LOGIKA PENANGKAPAN DATA KLIK
                     try:
-                        # Cek apakah ada titik yang dipilih
                         if event and "selection" in event and len(event["selection"]["points"]) > 0:
-                            # Ambil nilai sumbu Y (Nama Agen) dari titik pertama yang diklik
                             selected_broker = event["selection"]["points"][0]["y"]
-                    except Exception as e:
-                        # Jika error (versi streamlit lama/berbeda), selected_broker tetap None
+                    except Exception:
                         selected_broker = None
                 else:
                     st.info("Tidak ada data Agen/Broker.")
@@ -794,7 +723,7 @@ if df_raw is not None:
                             "PREMIUM": st.column_config.NumberColumn("Premi", format="Rp %d")
                         }
                     )
-                    if st.button("✖ Reset Pilihan"):
+                    if st.button("Reset Pilihan"):
                         st.rerun()
                 else:
                     # TAMPILAN DEFAULT (SEBELUM ADA KLIK)
